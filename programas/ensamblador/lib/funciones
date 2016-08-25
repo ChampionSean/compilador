@@ -1,0 +1,50 @@
+funciones:
+concatena: # funcion para concatenar cadenas
+    addi $sp, $sp, -8  # Decrementamos el apuntador al stack para guardar el $ra y $a0
+    sw   $ra, 0($sp) #guardamos la dirección de regreso en el stack
+    sw   $a0, 4($sp)
+    sw   $a1, 8($sp)
+ 	jal strlen
+    move   $s1, $v0 #
+    #sw   $a0, 4($sp)
+ 	move $a0, $a1
+ 	jal strlen
+ 	move $s2, $v0    
+ 	add $s1, $s1, $s2 #longitud de la concatenaciòn
+ 	addi $s1, $s1, 1
+ 	move $a0, $s1
+	li $v0 9 #reservamos memoria en el heap para la concatenaciòn
+	syscall
+	lw $a0, 4($sp)
+	lw $a1, 8($sp)
+	move $s3, $v0 #s1 tiene la direcciòn en donde se almacenará la concatenación
+copiar1:
+	 lb $s4, ($a0) # obtiene los caracteres en la memoria
+	 beqz $s4, copiar2
+	 sb $s4, ($s3) # almacenar el caracter actual en el dest
+	 addi $a0, $a0, 1               # avanzar el apuntador de la cadena1
+	 addi $s3, $s3, 1               # tambien se avanza el apuntador del destino
+	 j copiar1              # loop 
+copiar2:
+	 lb $s4, ($a1) # obtiene los caracteres en la memoria
+	 beqz $s4,fin_concatena
+	 sb $s4, ($s3) # almacenar el caracter actual en el dest
+	 addi $a1, $a1, 1               # avanzar el apuntador de la cadena2
+	 addi $s3, $s3, 1               # tambien se avanza el apuntador del destino
+	 j copiar2              # loop 
+fin_concatena:
+ 	 sb $zero, ($s3)
+ 	 lw   $ra, 0($sp)
+ 	 addi $sp, $sp, 8
+	 jr $ra
+strlen:
+	 li $v0, 0 #longitud de la cadena
+loop_strlen:
+	 lb  $t1, ($a0)
+	 beqz $t1, exit_loop
+	 addi $v0, $v0, 1
+	 addi $a0, $a0, 1
+	 j loop_strlen
+exit_loop:
+end_strlen:
+	 jr $ra

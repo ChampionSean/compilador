@@ -1,0 +1,53 @@
+import java_cup.runtime.*;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.Collections;
+
+parser code {:
+    public void report_error(String message, Object info) {
+        StringBuilder m = new StringBuilder(message);
+        if (info instanceof java_cup.runtime.Symbol) {
+            java_cup.runtime.Symbol s = ((java_cup.runtime.Symbol) info);
+            if (s.left >= 0) {
+                m.append(" en linea "+(s.left+1));
+                if (s.right >= 0)
+                    m.append(", columna "+(s.right+1));
+            }
+        }
+        System.err.println(m);
+ }
+    public void report_fatal_error(String message, Object info) {
+        report_error(message, info);
+        System.exit(1);
+    }
+    
+    public void syntax_error(Symbol s){
+        report_error("ERROR de sintaxis", s);
+    }
+    public void unrecovered_syntax_error(Symbol s)throws Exception{
+        report_fatal_error("El analizador sintactico no puede continuar",null);
+    }
+:};
+
+terminal String PROGRAMA, LLAVE_IZQ, LLAVE_DER, OP_ESCRITURA, MARCADOR_FIN_SENTENCIA,LITERAL_CADENA;
+
+non terminal AST.Programa programa;
+non terminal AST.BloqueDeSentencias bloqueDeSentencias;
+non terminal AST.Sentencia sentencia;
+non terminal AST.Operacion operacion;
+non terminal AST.Literal literal;
+non terminal AST.OperacionSalida operacionSalida;
+non terminal AST.Expresion expresion;
+non terminal AST.ExpresionLiteral expresionLiteral;
+
+start with programa;
+
+programa ::=    PROGRAMA:p LLAVE_IZQ bloqueDeSentencias:b LLAVE_DER {:RESULT= new AST.Programa(b,pleft);:};
+
+bloqueDeSentencias::= sentencia:s  {:ArrayList bloque = new ArrayList();bloque.add(s);RESULT= new AST.BloqueDeSentencias(bloque, sleft);:} 
+					| sentencia:s  bloqueDeSentencias:bloque {:bloque.sentencias.add(s); RESULT= bloque;:};
+sentencia ::= operacion:op  MARCADOR_FIN_SENTENCIA{:RESULT= op;:};
+operacion ::= operacionSalida:os {:RESULT=os;:};
+operacionSalida  ::= OP_ESCRITURA:oe expresion:expresion {:RESULT= new AST.OperacionSalida(expresion,oeleft);:};
+expresion ::= expresionLiteral:el {:RESULT= el;:};
+expresionLiteral ::= LITERAL_CADENA:lc {: RESULT = new AST.ExpresionLiteral(lc,lcleft);:};

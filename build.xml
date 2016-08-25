@@ -1,0 +1,124 @@
+<project name="compilador" default="javacnol" basedir=".">
+        <description>
+         Compilador para el lenguaje javañol - Curso de compiladores - Facultad de Ciencias UNAM
+        </description>
+      <!-- set global properties for this build -->
+      <property name="src" location="src"/>
+      <property name="build.dir" location="build"/>
+	<property name="programas.dir" location="programas"/>
+<property name="lib.dir"     value="lib"/>
+
+    <path id="libs">
+        <fileset dir="${build.dir}" includes="**/*.jar"/>
+    </path>
+	<path id="libs2">
+<fileset dir="${lib.dir}" includes="**/*.jar"/>
+	    </path>
+	
+	<path id="classpath">
+	        <fileset dir="${lib.dir}" includes="**/*.jar"/>
+	    </path>
+
+      <taskdef classname="jflex.anttask.JFlexTask" name="jflex">
+      <classpath>
+        <pathelement path="./lib/jflex-1.6.0.jar"/>
+      </classpath>
+      </taskdef>
+      <taskdef name="cup" classname="java_cup.anttask.CUPTask">
+<classpath>
+        <pathelement path="./lib/java-cup-11b.jar"/>
+      </classpath>
+</taskdef>
+      <target name="init" depends="jflex,cup">
+        <!-- Create the time stamp -->
+        <tstamp/>
+        <!-- Create the build directory structure used by compile -->
+        <mkdir dir="${build.dir}"/>
+      	<javac      srcdir="${src}"
+      		                    destdir="${build.dir}"
+      		                    debug="off" classpathref="classpath" nowarn="true"/>
+		<input
+					    message="Ingrese el nombre del programa a compilar:"
+					    addproperty="programa"
+					    defaultvalue="programa_pruebas.javanol"
+					  />
+      	<input
+      						    message="Ingrese la etapa hasta la cual se compilará el programa fuente:"
+      						    addproperty="fase"
+      						    defaultvalue="alexico"
+      						  />
+      </target>
+	
+	<target name="javacnol" depends="init"
+		            description="Compilador para el lenguaje javañol" >
+		        <!-- Compile the java code from ${src} into ${build} -->
+
+			<java dir="${build.dir}" classname="Compilador" fork="yes">
+				<classpath>
+					<path refid="classpath"/>
+					<path location="${build.dir}"/>
+				</classpath>
+				<arg value="${programas.dir}"/>
+				<arg value="${programa}"/>
+				<arg value="${fase}"/>
+			  </java>
+		</target>
+	
+
+	
+	<target name="javanol" description="Ejecuta el código ensamblador " >
+				        <!-- Compile the java code from ${src} into ${build} -->
+		<input message="Ingrese el nombre del programa a compilar:"
+			   addproperty="programa"
+			    defaultvalue="programa_pruebas.asm"
+        />
+		<javac      srcdir="${src}"
+		                    destdir="${build.dir}"
+		                    debug="false" classpathref="classpath" nowarn="true">
+			<compilerarg value="-XDignore.symbol.file"/>
+			</javac>
+			
+			<java dir="${build.dir}" classname="Compilador" fork="yes">
+										<classpath>
+											<path refid="classpath"/>
+											<path location="${build.dir}"/>
+										</classpath>
+						<arg value="${programas.dir}"/>
+											<arg value="${programa}"/>
+										<arg value="execasm"/>
+									  </java>
+		</target>
+	
+      <target name="compile" 
+            description="Compila el código fuente (java) " >
+        <!-- Compile the java code from ${src} into ${build} -->
+        <javac      srcdir="${src}"
+                    destdir="${build.dir}"
+                    debug="on" classpathref="classpath"/>
+      </target>
+      <!-- Create the Lexer.java file -->
+      <target name="jflex"
+            description="do the jflex thing">
+        <jflex
+          file="${src}/Lexer.jflex"
+          destdir="${src}"
+        />
+      </target>
+      <target name="cup">
+      <cup srcfile="${src}/Parser.cup"
+        destdir="${src}"
+        interface="true"
+      	debug="false"
+      	nopositions="false"
+locations="false"
+      />
+      </target>
+      <target name="clean"
+            description="clean up" >
+        <!-- Delete the ${build} directory trees -->
+        <delete dir="${build.dir}"/>
+        <delete file="${src}/Lexer.java"/>
+      	<delete file="${src}/parser.java"/>
+      	<delete dir="bin"/>
+      </target>
+    </project>
